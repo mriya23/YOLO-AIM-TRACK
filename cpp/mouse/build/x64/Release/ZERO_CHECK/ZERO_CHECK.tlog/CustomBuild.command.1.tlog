@@ -1,0 +1,10 @@
+^C:\USERS\RISKI\DESKTOP\L\CPP\MOUSE\BUILD\CMAKEFILES\D6BB30FC9E8946B276C17E067B6DF0B2\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:/Users/riski/Desktop/L/cpp/mouse -BC:/Users/riski/Desktop/L/cpp/mouse/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/riski/Desktop/L/cpp/mouse/build/LunarMouse.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

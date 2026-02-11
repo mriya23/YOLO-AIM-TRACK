@@ -1,0 +1,10 @@
+^C:\USERS\RISKI\DOWNLOADS\YOLO\CPP\AIMBOT\BUILD\CMAKEFILES\BCE011119255AF92D3FEC1403AD9202E\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SC:/Users/riski/Downloads/Yolo/cpp/aimbot -BC:/Users/riski/Downloads/Yolo/cpp/aimbot/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/riski/Downloads/Yolo/cpp/aimbot/build/lunar_aimbot_v17.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

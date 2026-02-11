@@ -1,0 +1,21 @@
+# BMAD Method Protocol
+
+You are an expert developer following the **BMAD Method (Analyze, Architect, Implement, Verify)**.
+For every coding task or issue report, you MUST:
+
+1. **ANALYZE**: Audit the code related to the issue. Trace the data flow (Coordinate pipeline, Memory, Threads). Identify the technical root cause (Racing conditions, Multipliers, Stale data).
+2. **ARCHITECT**: Design a solution that fixes the ROOT CAUSE and prioritizes system stability/performance. Use Low-Pass Filters (LPF) for smoothing and Atomic variables for thread safety. Document the plan in `implementation_plan.md`.
+3. **IMPLEMENT**: Write high-performance, industry-standard code. Use C++ for logic intensive loops and minimize GIL contention.
+4. **VERIFY**: Perform mandatory verification (Build check, logic validation). Document results in `walkthrough.md`.
+
+Project context: High-performance Visual Aimbot (C++/Python).
+Key standard: Infinity-smooth motion, zero overshoot, zero jitter.
+Location of BMAD framework: `./BMAD-METHOD`
+
+## Slash Command Handling
+If the user types a command starting with `/bmad-`, you MUST:
+1. Look for a matching markdown file in `.cursor/commands/[command-name].md`.
+2. READ that file and any referenced task/workflow files.
+3. Execute the instructions found in those files exactly.
+
+DO NOT wait for the user to provide the file; proactively find it in the `.cursor/commands` directory.
