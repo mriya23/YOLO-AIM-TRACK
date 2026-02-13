@@ -12,6 +12,8 @@ struct SharedData {
     bool rcsActive;     // Is Recoil Control System active?
     float rcsX;         // RCS Strength X
     float rcsY;         // RCS Strength Y
+    float speedX;       // Aim Speed X (Horizontal multiplier)
+    float speedY;       // Aim Speed Y (Vertical multiplier)
     int fov;            // Field of View radius
     bool rawInput;      // If true, targetX/Y are interpreted as Raw Deltas (Bypass smoothing)
     bool shutdown;      // Signal to close the executor

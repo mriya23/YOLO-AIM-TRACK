@@ -59,8 +59,33 @@ class HybridOrchestrator:
         if not self.model_loader.load():
             sys.exit(1)
             
+        # Load Dynamic SHM Name (Phase 15: Stealth)
+        try:
+            # FORCE COMPATIBILITY MODE: C++ Executor is hardcoded to "aimbot_shared_mem"
+            # We ignore build_config.json to ensure connection.
+            self.shm_name = "aimbot_shared_mem"
+            print(f"[+] Compatibility Mode: SHM_ID={self.shm_name}")
+            
+            # build_conf_path = os.path.join(base_dir, "lib", "config", "build_config.json")
+            # print(f"[DBG] Loading Build Config from: {build_conf_path}")
+            # with open(build_conf_path, 'r') as f:
+            #     build_data = json.load(f)
+            #     self.shm_name = build_data.get("shm_name", "aimbot_shared_mem")
+            #     print(f"[+] Loaded Stealth Config: SHM_ID={self.shm_name}")
+        except Exception as e:
+            self.shm_name = "aimbot_shared_mem"
+            print(f"[!] Build Config Error: {e}")
+            self.shm_name = "aimbot_shared_mem"
+            print(f"[!] Build Config Error: {e}")
+            print(f"[!] Path tried: {build_conf_path}")
+            # Do NOT exit yet, but make it obvious
+            print("-" * 50)
+            print("CRITICAL WARNING: USING FALLBACK SHM NAME 'aimbot_shared_mem'")
+            print("IF EXECUTOR.EXE EXPECTS A RANDOM NAME, THIS WILL FAIL.")
+            print("-" * 50)
+
         # self.mouse = get_controller(self.config) # REMOVED overhead
-        self.shm = SharedMemoryManager()
+        self.shm = SharedMemoryManager(filename=self.shm_name)
         self.running = True
         
         # Velocity State
@@ -82,11 +107,18 @@ class HybridOrchestrator:
         self.game_hwnd = None  # Will be set on first RMB hold
         
         print("[+] Python Orchestrator Initialized.")
+        print("[+] Python Orchestrator Initialized.")
         try:
-            import psutil
-            p = psutil.Process()
-            p.nice(psutil.HIGH_PRIORITY_CLASS)
-        except: pass
+            # Force High Priority (Win32 API) - Works without psutil
+            pid = win32api.GetCurrentProcessId()
+            handle = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, True, pid)
+            win32process = ctypes.windll.kernel32
+            # GLOBAL PRIORITY CLASS: HIGH (0x00000080) or REALTIME (0x00000100)
+            # Use HIGH to avoid locking mouse/keyboard input if logic freezes
+            win32process.SetPriorityClass(int(handle), 0x00000080)
+            print("[+] Process Priority Boost: HIGH (Anti-Starvation)")
+        except Exception as e:
+            print(f"[!] Failed to set Priority: {e}")
         
         # Force 1ms Timer Resolution (Crucial for 144Hz loops)
         try:
@@ -124,7 +156,19 @@ class HybridOrchestrator:
                             cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
                     if best_center:
                         roi_size = self.config.get("roi_size", 320)
-                        cv2.circle(frame, (int(best_center[0] + roi_size/2), int(best_center[1] + roi_size/2)), 4, (0, 0, 255), -1)
+                        # Draw Red Center (Target Center)
+                        # cv2.circle(frame, (int(best_center[0] + roi_size/2), int(best_center[1] + roi_size/2)), 4, (0, 0, 255), -1)
+                        
+                        # Draw AIM POINT (Cyan) - This is where the mouse actually goes
+                        # Re-calculate aim point relative to ROI center for visualization
+                        # We don't have the raw box here easily, but best_center IS the aim point relative to ROI center.
+                        # Wait, best_center in display_loop IS (roi_size/2 + delta_x, roi_size/2 + delta_y)
+                        # And delta IS calculated based on aim_point.
+                        # So best_center IS the aim point.
+                        
+                        cx = int(best_center[0])
+                        cy = int(best_center[1])
+                        cv2.circle(frame, (cx, cy), 3, (255, 255, 0), -1) # Cyan Dot = HOSTILE LOCK
                         
                     # DRAW FOV CIRCLE:
                     fov_radius = int(self.config.get("fov_radius", 100))
@@ -177,7 +221,7 @@ class HybridOrchestrator:
         
         if not self.enabled:
             # Tell C++ to stop aiming
-            self.shm.write_data(0, 0, False, 0.0, 0.0, False, 0.0, 0.0, 100, False)
+            self.shm.write_data(0, 0, False, 0.0, 0.0, False, 0.0, 0.0, 0.0, 0.0, 100, False)
             self.is_aiming = False
             return
 
@@ -187,7 +231,7 @@ class HybridOrchestrator:
         # Focus Check: Only aim when game window is in foreground
         if not self.enabled:
             # Tell C++ to stop aiming
-            self.shm.write_data(0, 0, False, 0.0, 0.0, False, 0.0, 0.0, 100, False)
+            self.shm.write_data(0, 0, False, 0.0, 0.0, False, 0.0, 0.0, 0.0, 0.0, 100, False)
             self.is_aiming = False
             return
 
@@ -213,17 +257,32 @@ class HybridOrchestrator:
 
         # Hybrid v3.1: Send Sensor Data to C++ Executor via Shared Memory
         # raw_input=False -> Tells C++ to use its own Smoothing Logic
-        smoothing = float(self.config.get("smoothing", 3.0))
-        humanization = float(self.config.get("humanization", 1.5))
+        smoothing = max(0.1, min(100.0, float(self.config.get("smoothing", 3.0))))
+        humanization = max(0.0, min(10.0, float(self.config.get("humanization", 1.5))))
         rcs_active = bool(self.config.get("rcs_enabled", False))
-        rcs_x = float(self.config.get("rcs_strength_x", 0.0))
-        rcs_x = float(self.config.get("rcs_strength_x", 0.0))
-        rcs_y = float(self.config.get("rcs_strength_y", 0.0))
+        rcs_x = max(0.0, min(10.0, float(self.config.get("rcs_strength_x", 0.0))))
+        rcs_y = max(0.0, min(10.0, float(self.config.get("rcs_strength_y", 0.0))))
+        # Support both new (speed_x) and legacy (x_speed) config keys
+        speed_x = max(1.0, min(1000.0, float(self.config.get("speed_x", self.config.get("x_speed", 250.0)))))
+        speed_y = max(0.1, min(100.0, float(self.config.get("speed_y", self.config.get("y_speed", 10.0)))))
         
+        if self.config.get("software_mouse", False):
+            if has_target and right_held:
+                # Basic Software Smoothing
+                kp_x = (speed_x / 1000.0) / smoothing
+                kp_y = (speed_y / 1000.0) / smoothing
+                mx = int(target_dx * kp_x * 7) # Simulating C++ speed multiplier
+                my = int(target_dy * kp_y * 7)
+                if rcs_active:
+                    my += int(rcs_y * 1.5)
+                win32api.mouse_event(win32con.MOUSEEVENTF_MOVE, mx, my, 0, 0)
+        
+        # Always write to SHM for Executor if it exists
         self.shm.write_data(
             ix, iy, 
             has_target and bool(right_held),
             smoothing, humanization, rcs_active, rcs_x, rcs_y,
+            speed_x, speed_y,
             int(self.config.get("fov_radius", 100)),
             raw_input=False,
             shutdown=False
@@ -263,7 +322,9 @@ class HybridOrchestrator:
                         self.load_config()
                         fov = self.config.get("fov_radius", 0)
                         sm = self.config.get("smoothing", 0)
-                        print(f"[DBG] Config Sync: FOV={fov} Smooth={sm:.2f}") 
+                        ratio = self.config.get("aim_point_ratio", 0.2)
+                        bone = "HEAD" if ratio <= 0.15 else "NECK" if ratio <= 0.25 else "CHEST"
+                        print(f"[DBG] Config Sync: FOV={fov} Smooth={sm:.2f} Bone={bone}({ratio})") 
                 except: pass
 
             frame = self.camera.get_latest_frame()
@@ -300,19 +361,44 @@ class HybridOrchestrator:
                 min_dist = float('inf')
                 fov = self.config.get("fov_radius", 100)
                 
+                # STICKY AIM LOGIC (HARDCODED) per User Request
+                stickiness = 0.15 # Balanced "Glue" Factor
+                sticky_radius = roi_size * stickiness 
+                
+                last_target = getattr(self, 'last_target_rel', None)
+                was_aiming = getattr(self, 'is_aiming', False)
+                
+                prioritize_last = False
+                if last_target and was_aiming:
+                    prioritize_last = True
+
                 for det in dets:
                     x1, y1, x2, y2, conf = det
                     bx, by = (x1 + x2) / 2, (y1 + y2) / 2
-                    target_y = y1 + (y2 - y1) * self.config.get("aim_point_ratio", 0.2)
-                    dist = ((bx - center)**2 + (by - center)**2)**0.5
                     
-                    if dist < min_dist and dist < fov:
-                        min_dist = dist
+                    # Manual Offset Calculation
+                    ratio = self.config.get("aim_point_ratio", 0.2)
+                    target_y = y1 + (y2 - y1) * ratio
+                    
+                    # Distance to Screen Center
+                    dist_to_center = ((bx - center)**2 + (by - center)**2)**0.5
+                    
+                    # Distance to LAST Locked Position (Stickiness)
+                    score = dist_to_center
+                    if prioritize_last:
+                        dist_to_last = ((bx - center - last_target[0])**2 + (target_y - center - last_target[1])**2)**0.5
+                        if dist_to_last < sticky_radius * 2.0: # If inside sticky radius
+                             # Massive bonus to score (makes it appear closer to center)
+                             score = score * 0.1 
+                    
+                    if score < min_dist and dist_to_center < fov:
+                        min_dist = score
                         best_det = (bx - center, target_y - center)
                 
                 if best_det:
                     best_target_delta = (best_det[0], best_det[1])
                     has_target = True
+                    self.last_target_rel = best_target_delta # Update lock position
 
             # Calculate movement (Python Math)
             if has_target:
@@ -332,7 +418,7 @@ class HybridOrchestrator:
                 aim_str = 'ACTIVE' if getattr(self, 'is_aiming', False) else 'IDLE'
                 en_str = 'ON' if self.enabled else 'OFF'
                 dbg = getattr(self, '_dbg_shm', '')
-                print(f"FPS: {frame_cnt} | AIM: {aim_str} | EN: {en_str} {dbg}")
+                print(f"FPS: {frame_cnt} | AIM: {aim_str} | SHM: {self.shm_name} | EN: {en_str} {dbg}")
                 frame_cnt = 0
                 start_t = time.perf_counter()
 
@@ -357,19 +443,43 @@ class HybridOrchestrator:
 
     def stop(self):
         self.running = False
-        if hasattr(self, 'camera') and self.camera.is_capturing:
-            self.camera.stop()
+        print("[*] Releasing System Resources...")
+        if hasattr(self, 'camera'):
+            try:
+                self.camera.stop()
+                del self.camera
+            except: pass
+            
         cv2.destroyAllWindows()
+        
+        # Explicit VRAM Release (CRITICAL for 4GB GPUs)
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                print("[+] GPU VRAM Cache Cleared.")
+        except: pass
+
         if hasattr(self, 'shm'):
             self.shm.close()
+            
         try:
              import ctypes
              ctypes.windll.winmm.timeEndPeriod(1)
         except: pass
+        print("[+] System Offline.")
 
 if __name__ == "__main__":
-    orch = HybridOrchestrator()
     try:
+        orch = HybridOrchestrator()
         orch.run()
     except KeyboardInterrupt:
-        orch.stop()
+        if 'orch' in locals(): orch.stop()
+    except Exception as e:
+        import traceback
+        with open("python_crash.log", "w") as f:
+            f.write(f"FATAL ERROR: {str(e)}\n")
+            f.write(traceback.format_exc())
+        print(f"CRASH: {e}")
+        if 'orch' in locals(): orch.stop()
+        sys.exit(1)

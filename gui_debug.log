@@ -1,0 +1,116 @@
+[43548] === GUI STARTED ===
+[43548] Starting Engine Flow...
+[43548] Cleaning old processes...
+[43548] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[43548] Python Backend started (PID: 46520)
+[43548] Waiting 5s for SHM initialization...
+[43548] Attempting to launch C++ Executor...
+[43548] Check path: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[43548] Executing: C:\Users\riski\Downloads\Yolo\cpp\executor.exe (CWD: C:\Users\riski\Downloads\Yolo\cpp)
+[43548] Executor started (PID: 46324)
+[46708] === GUI STARTED ===
+[46708] Starting Engine Flow...
+[46708] Cleaning old processes...
+[46708] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[46708] Python Backend started (PID: 43708)
+[46708] Waiting 5s for SHM initialization...
+[46708] Attempting to launch C++ Executor via CMD Start...
+[46708] Check path: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[46708] Executor launch command sent via Shell.
+[49400] === GUI STARTED ===
+[48768] === GUI STARTED ===
+[48768] === STARTING ENGINE FLOW ===
+[48768] Cleaning old executor instances...
+[48768] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[48768] Python Backend success (PID: 27372)
+[48768] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[48768] Executor success (PID: 46764)
+[48768] === STARTING ENGINE FLOW ===
+[48768] Cleaning old executor instances...
+[48768] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[48768] Python Backend success (PID: 52208)
+[48768] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[48768] Executor success (PID: 51580)
+[53876] === GUI STARTED ===
+[53876] === STARTING ENGINE FLOW ===
+[53876] Cleaning old executor instances...
+[53876] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[53876] Python Backend success (PID: 52424)
+[53876] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[53876] Executor success (PID: 53944)
+[56092] === GUI STARTED ===
+[56092] === STARTING ENGINE FLOW ===
+[56092] Cleaning old executor instances...
+[56092] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[56092] Python Backend success (PID: 55688)
+[56092] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[56092] Executor success (PID: 51848)
+[50376] === GUI STARTED ===
+[50376] === STARTING ENGINE FLOW ===
+[50376] Cleaning old executor instances...
+[50376] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[50376] Python Backend success (PID: 58332)
+[50376] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[50376] Executor success (PID: 58488)
+[63744] === GUI STARTED ===
+[63744] === STARTING ENGINE FLOW ===
+[63744] Cleaning old executor instances...
+[63744] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[63744] Python Backend success (PID: 61020)
+[63744] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[63744] Executor success (PID: 65520)
+[57424] === GUI STARTED ===
+[57424] === STARTING ENGINE FLOW ===
+[57424] Cleaning old executor instances...
+[57424] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[57424] Python Backend success (PID: 65060)
+[57424] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[57424] Executor success (PID: 65808)
+[21976] === GUI STARTED ===
+[21976] === STARTING ENGINE FLOW ===
+[21976] Cleaning old executor instances...
+[21976] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[21976] Python Backend success (PID: 21100)
+[21976] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[21976] Executor success (PID: 25688)
+[5780] === GUI STARTED ===
+[5780] === STARTING ENGINE FLOW ===
+[5780] Cleaning old executor instances...
+[5780] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[5780] Python Backend success (PID: 2900)
+[5780] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[5780] Executor success (PID: 19996)
+[2536] === GUI STARTED ===
+[2536] === STARTING ENGINE FLOW ===
+[2536] Cleaning old executor instances...
+[2536] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[2536] Python Backend success (PID: 7120)
+[2536] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[2536] Executor success (PID: 12232)
+[2536] === STARTING ENGINE FLOW ===
+[2536] Cleaning old executor instances...
+[2536] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[2536] Python Backend success (PID: 11064)
+[2536] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[2536] Executor success (PID: 10460)
+[23988] === GUI STARTED ===
+[23988] === STARTING ENGINE FLOW ===
+[23988] Cleaning old executor instances...
+[23988] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[23988] Python Backend success (PID: 23956)
+[23988] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[23988] Executor success (PID: 21772)
+[27044] === GUI STARTED ===
+[27044] === STARTING ENGINE FLOW ===
+[27044] Cleaning old executor instances...
+[27044] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[27044] Python Backend success (PID: 29284)
+[27044] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[27044] Executor success (PID: 28184)
+[16776] === GUI STARTED ===
+[16776] === STARTING ENGINE FLOW ===
+[16776] Cleaning old executor instances...
+[16776] Launching Python Backend: C:\Users\riski\Downloads\Yolo\python\main.py
+[16776] Python Backend success (PID: 28376)
+[16776] Attempting Final launch: C:\Users\riski\Downloads\Yolo\cpp\executor.exe
+[16776] Executor success (PID: 27020)

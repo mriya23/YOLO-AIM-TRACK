@@ -1,0 +1,2 @@
+[02/13/2026-00:12:05] [TRT] [I] Loaded engine size: 15 MiB
+[02/13/2026-00:12:05] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +0, GPU +4, now: CPU 0, GPU 17 (MiB)

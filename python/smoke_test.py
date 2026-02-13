@@ -31,12 +31,12 @@ def smoke_test():
             # Simulate a target jumping around center
             x = (i % 10) - 5
             y = (i % 6) - 3
-            # x, y, found, smoothing, humanization, rcs, rcs_x, rcs_y, fov
-            shm.write_data(x, y, True, 1.0, 1.5, True, 0.5, 2.0, 100)
+            # x, y, found, smoothing, humanization, rcs, rcs_x, rcs_y, speed_x, speed_y, fov
+            shm.write_data(x, y, True, 1.0, 1.5, True, 0.5, 2.0, 280.0, 1.0, 100)
             time.sleep(0.1)
             
         print("[*] Stopping test...")
-        shm.write_data(0, 0, False, 0, 0, False, 0, 0, 0, shutdown=True)
+        shm.write_data(0, 0, False, 0, 0, False, 0, 0, 0, 0, 0, shutdown=True)
         
     finally:
         shm.close()

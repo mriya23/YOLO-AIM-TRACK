@@ -5,6 +5,7 @@
 #include <thread>
 #include <math.h>
 #include <random>
+#include <algorithm>
 #include "shared_struct.h"
 #include "interception_loader.h"
 
@@ -55,12 +56,15 @@ int main() {
          std::cout << "[-] interception.dll not found. Using Standard Mouse Input." << std::endl;
     }
 
-    const char* shm_name = "aimbot_shared_mem";
+#ifndef SHM_NAME
+    #define SHM_NAME "aimbot_shared_mem" // Default fallback
+    #endif
+    const char* shm_name = SHM_NAME;
     HANDLE hMapFile = NULL;
 
     // === RETRY LOOP: Wait for Python to create SHM ===
     std::cout << "[+] Waiting for Python Orchestrator..." << std::endl;
-    for (int i = 0; i < 30; i++) { // 30 retries = 15 seconds max
+    for (int i = 0; i < 120; i++) { // 120 retries = 60 seconds max
         hMapFile = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, shm_name);
         if (hMapFile != NULL) break;
         std::cout << "." << std::flush;
@@ -99,83 +103,85 @@ int main() {
 
     float acc_x = 0.0f;
     float acc_y = 0.0f;
-    int debug_counter = 0;
+    int tick_counter = 0;
     
-    // Consume + Distribute pattern:
-    // Python writes target delta at ~144Hz. C++ runs at ~1000Hz.
-    // OLD BUG: C++ read the SAME stale delta 7x → 7x overshoot.
-    // FIX: Consume (zero) target on read, distribute movement over N ticks.
-    float remaining_dx = 0.0f;
-    float remaining_dy = 0.0f;
+    // Distribution state
     float step_x = 0.0f;
     float step_y = 0.0f;
     int steps_remaining = 0;
-    // ADAPTIVE DISTRIBUTION STATE
-    auto last_update_time = std::chrono::high_resolution_clock::now();
-    int current_distribute_ticks = 7; // Default start
-
-    // === DISABLE POWER THROTTLING (EcoQoS) ===
-    // Prevents Windows 11 from throttling this process when in background
-    PROCESS_POWER_THROTTLING_STATE PowerThrottling;
-    RtlZeroMemory(&PowerThrottling, sizeof(PowerThrottling));
-    PowerThrottling.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
-    PowerThrottling.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
-    PowerThrottling.StateMask = 0; // 0 = Disable Throttling
     
-    SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &PowerThrottling, sizeof(PowerThrottling));
-    std::cout << "[+] Power Throttling: DISABLED" << std::endl;
-
-    // === PRECISION LOOP (Hybrid Spinlock) ===
+    // === PRECISION LOOP ===
+    std::cout << "[+] Entering Main Loop (Heartbeat every 500ms)" << std::endl;
+    auto last_heartbeat = std::chrono::high_resolution_clock::now();
     auto frame_start = std::chrono::high_resolution_clock::now();
     
     while (true) {
         frame_start = std::chrono::high_resolution_clock::now();
         
-        if (pBuf->shutdown) break;
-
-        // ... work ...
-        // Debug output
-        debug_counter++;
-        if (debug_counter >= 1000) {
-            debug_counter = 0;
-            std::cout << "[DBG] FPS_Ticks=" << current_distribute_ticks 
-                      << " sm=" << pBuf->smoothing 
-                      << " rem=(" << steps_remaining << ")" << std::endl;
+        // Safety check: pBuf pointer
+        if (!pBuf) {
+            std::cerr << "[X] Critical: Shared Memory Pointer LOST!" << std::endl;
+            break;
         }
 
+        if (pBuf->shutdown) {
+            std::cout << "[!] Shutdown signal received." << std::endl;
+            break;
+        }
+
+        /* Heartbeat removed for clean release
+        auto now = std::chrono::high_resolution_clock::now();
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - last_heartbeat).count() > 500) {
+            std::cout << "H" << std::flush; 
+            last_heartbeat = now;
+        }
+        */
+
         if (pBuf->targetFound) {
-             // ... COPY EXISTING LOGIC ...
              if (!pBuf->rawInput) {
                 int raw_tx = pBuf->targetX;
                 int raw_ty = pBuf->targetY;
                 
                 if (raw_tx != 0 || raw_ty != 0) {
-                     // Fixed 5ms strategy
-                    int current_distribute_ticks = 5; 
+                    // Reset on read (Consume)
                     pBuf->targetX = 0;
                     pBuf->targetY = 0;
                     
-                    if (abs(raw_tx) < 2 && abs(raw_ty) < 2) {
+                    if (abs(raw_tx) < 1 && abs(raw_ty) < 1) {
                         steps_remaining = 0;
-                        goto frame_end; // Skip to wait
-                    }
+                    } else {
+                        // === SAFE SMOOTHING MATH (ANTI-OVERSHOOT) ===
+                        // User Input
+                        float ui_smooth = std::max(1.0f, pBuf->smoothing);
+                        float ui_spd_x = std::max(1.0f, pBuf->speedX); // Slider 1-500
+                        float ui_spd_y = std::max(1.0f, pBuf->speedY); // Slider 1-100?
+                        
+                        // 1. Calculate Effective Smooth (Speed reduces smoothing)
+                        // Sensitivity factor: speed 100 = base. speed 500 = 5x faster.
+                        float sens_x = ui_spd_x / 100.0f;
+                        float sens_y = ui_spd_y / 10.0f; // Y-Speed is usually 1-20
+                        
+                        // Effective smooth cannot be less than 1.0 (1.0 = Instant Lock-On)
+                        // This GUARANTEES no overshoot.
+                        float eff_smooth_x = std::max(1.0f, ui_smooth / sens_x);
+                        float eff_smooth_y = std::max(1.0f, ui_smooth / sens_y);
+                        
+                        // 2. Final Move Distance
+                        float total_move_x = (float)raw_tx / eff_smooth_x;
+                        float total_move_y = (float)raw_ty / eff_smooth_y;
 
-                    // Calculate smooth pull for this batch
-                    // UNCLAMPED: Allow 0.01 (Rage Mode)
-                    float smooth = max(0.01f, pBuf->smoothing);
-                    float sensitivity = 1.5f; 
-                    
-                    float total_move_x = (float)raw_tx * (sensitivity / smooth);
-                    float total_move_y = (float)raw_ty * (sensitivity / smooth);
-                    
-                    if (pBuf->humanization > 0.01f && (abs(raw_tx) > 5 || abs(raw_ty) > 5)) {
-                        total_move_x += dist(rng) * pBuf->humanization * 0.1f;
-                        total_move_y += dist(rng) * pBuf->humanization * 0.1f;
+                        // 3. Humanization (Only if far enough)
+                        if (pBuf->humanization > 0.01f && (abs(raw_tx) > 5 || abs(raw_ty) > 5)) {
+                            total_move_x += dist(rng) * pBuf->humanization * 0.1f;
+                            total_move_y += dist(rng) * pBuf->humanization * 0.1f;
+                        }
+
+                        // 4. Distribution over 5 ticks (1ms each)
+                        int ticks = 5;
+                        step_x = total_move_x / (float)ticks;
+                        step_y = total_move_y / (float)ticks;
+                        steps_remaining = ticks;
                     }
-                    
-                    step_x = total_move_x / current_distribute_ticks;
-                    step_y = total_move_y / current_distribute_ticks;
-                    steps_remaining = current_distribute_ticks;
                 }
                 
                 if (steps_remaining > 0) {
@@ -201,7 +207,7 @@ int main() {
                     move_mouse(ix, iy);
                 }
             } else {
-                // Raw
+                // Raw Input Mode
                 int dx = pBuf->targetX;
                 int dy = pBuf->targetY;
                 if (dx != 0 || dy != 0) {
@@ -216,17 +222,15 @@ int main() {
             steps_remaining = 0;
         }
 
-        frame_end:
-        // BUSY WAIT for consistent 1000Hz
+        // Precise 1ms Sleep
         while (std::chrono::duration<float, std::milli>(std::chrono::high_resolution_clock::now() - frame_start).count() < 1.0f) {
-            // Spin to burn time (Precise < 1ms)
-            // _mm_pause(); // Intrinsic not included, just empty loop or yield
              std::this_thread::yield(); 
         }
     }
-
+    
     timeEndPeriod(1);
     UnmapViewOfFile(pBuf);
     CloseHandle(hMapFile);
+    std::cout << "\n[+] Executor exiting cleanly." << std::endl;
     return 0;
 }
